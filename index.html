@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+<title>oknk - player</title>
+<meta charset="utf-8">
+<style type="text/css">
+
+body {
+    background: #111;
+    color: #fff;
+    padding: 0;
+    margin: 0;
+}
+.oknk-load-progress {
+    fill: #024;
+}
+.oknk-play-progress {
+    fill: #03f;
+}
+#player {
+    margin: 50px;
+}
+
+</style>
+</head>
+<body onload="init()">
+
+<script type="text/javascript" src="oknk_player.js"></script>
+<script type="text/javascript">
+
+function init(){
+    var player = new OknkPlayer({
+        size: 128
+    });
+    document.getElementById("player").appendChild(player.element);
+    player.load("test.mp3");
+    player.play();
+
+    // setTimeout(function(){
+    //     player.pause();
+    // }, 2000);
+}
+
+</script>
+
+<div id="player"></div>
+
+</body>
+</html>
