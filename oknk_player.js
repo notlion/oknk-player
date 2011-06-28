@@ -129,8 +129,8 @@ var OknkPlayer = OknkPlayer || (function(){
                                     .lineTo(-3, 4)
                                     .lineTo(-3, -4).close().end()
                                     .attr("class", "oknk-icon-play"),
-            pause: new Path().begin().rect(-4, -4, -1, 4)
-                                     .rect(1, -4, 4, 4).end()
+            pause: new Path().begin().rect(-4, -3, -1, 3)
+                                     .rect(1, -3, 4, 3).end()
                                      .attr("class", "oknk-icon-pause")
         };
 
