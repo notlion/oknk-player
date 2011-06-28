@@ -12,8 +12,12 @@ body {
     padding: 0;
     margin: 0;
 }
+
 .oknk-progress-load {
     fill: #024;
+}
+.oknk-progress-load:hover {
+    cursor: pointer;
 }
 .oknk-progress-play {
     fill: #03f;
@@ -27,7 +31,7 @@ body {
 }
 
 .oknk-play-toggle:hover {
-    fill: #02e;
+    fill: #02c;
     cursor: pointer;
 }
 .oknk-play-toggle:hover .oknk-icon-play {
@@ -51,11 +55,6 @@ function init(){
     });
     document.getElementById("player").appendChild(player.element);
     player.load("test.mp3");
-    player.play();
-
-    setTimeout(function(){
-        player.pause();
-    }, 2000);
 }
 
 </script>

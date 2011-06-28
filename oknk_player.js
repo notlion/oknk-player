@@ -61,15 +61,20 @@ var OknkPlayer = OknkPlayer || (function(){
         this.element.setAttribute(name, value);
         return this;
     };
-    Elem.prototype.class = function(name){
-        return this.attr("class", name);
-    };
     Elem.prototype.translate = function(x, y){
         this.transforms.push("translate(" + x + "," + y + ")");
         return this.attr("transform", this.transforms.join(""));
     };
     Elem.prototype.addChild = function(elem){
         this.element.appendChild(elem.element);
+        return this;
+    };
+    Elem.prototype.on = function(name, callback){
+        this.element.addEventListener(name, callback);
+        return this;
+    };
+    Elem.prototype.off = function(name, callback){
+        this.element.removeEventListener(name, callback);
         return this;
     };
 
@@ -112,13 +117,13 @@ var OknkPlayer = OknkPlayer || (function(){
     function PlayToggle(radius){
         Elem.call(this, "g");
 
-        this.class("oknk-play-toggle");
+        this.attr("class", "oknk-play-toggle");
 
         this.gfk_bg = new Elem("circle").attr("r", radius);
         this.gfk_play = new Path().begin().moveTo(4, 0)
                                           .lineTo(-3, 4)
                                           .lineTo(-3, -4).close().end()
-                                          .class("oknk-icon-play");
+                                          .attr("class", "oknk-icon-play");
 
         this.addChild(this.gfk_bg).addChild(this.gfk_play);
     }
@@ -162,6 +167,7 @@ var OknkPlayer = OknkPlayer || (function(){
         var player = this;
         player.progress = 0;
         player.position = 0;
+        player.playing = false;
         player.radius = this.options.size / 2;
 
 
@@ -179,13 +185,14 @@ var OknkPlayer = OknkPlayer || (function(){
 
         var grp = new Elem("g").translate(player.radius, player.radius);
 
-        this.load_arc = createArc().class("oknk-progress-load");
+        this.load_arc = createArc().attr("class", "oknk-progress-load").on("mousedown", onScrubDown);
         grp.addChild(this.load_arc);
 
-        this.play_arc = createArc().class("oknk-progress-play");
+        this.play_arc = createArc().attr("class", "oknk-progress-play").on("mousedown", onScrubDown);
         grp.addChild(this.play_arc);
 
         this.play_tog = new PlayToggle(player.radius * 0.45);
+        this.play_tog.on("click", onToggleClick);
         grp.addChild(this.play_tog);
 
         element.appendChild(svg.addChild(grp).element);
@@ -213,6 +220,29 @@ var OknkPlayer = OknkPlayer || (function(){
             console.error("OknkPlayer Error: ", e);
         }
 
+        function onToggleClick(e){
+            if(player.playing){
+                player.pause();
+            }
+            else{
+                player.play();
+            }
+        }
+
+        function onScrubDown(e){
+            document.addEventListener("mousemove", onScrubMove);
+            document.addEventListener("mouseup", onScrubUp);
+        }
+        function onScrubMove(e){
+            var ox = e.clientX - (player.element.offsetTop + player.radius);
+            var oy = e.clientY - (player.element.offsetLeft + player.radius);
+            player.skip((Math.atan2(-ox, oy) + Math.PI) / (Math.PI * 2));
+        }
+        function onScrubUp(e){
+            document.removeEventListener("mousemove", onScrubMove);
+            document.removeEventListener("mouseup", onScrubUp);
+        }
+
         function update(){
             player.position = player.audio.currentTime / player.audio.duration;
 
@@ -235,10 +265,20 @@ var OknkPlayer = OknkPlayer || (function(){
 
         play: function(){
             this.audio.play();
+            this.playing = true;
         },
 
         pause: function(){
             this.audio.pause();
+            this.playing = false;
+        },
+
+        skip: function(position){
+            var was_playing = this.playing;
+            this.pause();
+            this.audio.currentTime = position * this.audio.duration;
+            if(was_playing)
+                this.play();
         }
 
     };
