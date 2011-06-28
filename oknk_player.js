@@ -130,7 +130,7 @@ var OknkPlayer = OknkPlayer || (function(){
         return this.attr("d", this.d.join(" "));
     };
 
-    function PlayToggle(radius){
+    function Toggle(radius){
         Elem.call(this, "g");
 
         this.attr("class", "oknk-play-toggle");
@@ -153,13 +153,40 @@ var OknkPlayer = OknkPlayer || (function(){
 
         this.icon("play");
     }
-    PlayToggle.prototype = new Elem();
-    PlayToggle.prototype.icon = function(name){
+    Toggle.prototype = new Elem();
+    Toggle.prototype.icon = function(name){
         for(var i in this.icons){
             this.icons[i].element.style.display = "none";
         }
         this.icons[name].element.style.display = "inline";
     };
+
+    function Progress(radius){
+        Elem.call(this, "g");
+
+        this.attr("class", "oknk-progress");
+
+        function createArc(){
+            var arc = new Path();
+            arc.set = function(progress){
+                this.begin().moveTo(0, 0).lineTo(0, -radius);
+
+                var theta = Math.PI * 2 * progress;
+                this.arc(0, 0, Math.min(Math.PI, theta));
+                if(theta > Math.PI)
+                    this.arc(0, 0, theta - Math.PI);
+
+                this.close().end();
+            }
+            return arc;
+        }
+
+        this.load = createArc().attr("class", "load");
+        this.addChild(this.load);
+        this.play = createArc().attr("class", "play");
+        this.addChild(this.play);
+    }
+    Progress.prototype = new Elem();
 
 
     if(!window.requestAnimationFrame){
@@ -217,33 +244,16 @@ var OknkPlayer = OknkPlayer || (function(){
 
         var grp = new Elem("g").translate(player.radius, player.radius);
 
-        this.load_arc = createArc().attr("class", "oknk-progress-load").on("mousedown", onScrubDown);
-        grp.addChild(this.load_arc);
+        this.ui = {
+            progress: new Progress(player.radius).on("mousedown", onScrubDown),
+            toggle:   new Toggle(player.radius * 0.45).on("click", onToggleClick)
+        };
 
-        this.play_arc = createArc().attr("class", "oknk-progress-play").on("mousedown", onScrubDown);
-        grp.addChild(this.play_arc);
-
-        this.play_tog = new PlayToggle(player.radius * 0.45);
-        this.play_tog.on("click", onToggleClick);
-        grp.addChild(this.play_tog);
+        grp.addChild(this.ui.progress);
+        grp.addChild(this.ui.toggle);
 
         element.appendChild(svg.addChild(grp).element);
 
-
-        function createArc(){
-            var arc = new Path();
-            arc.setProgress = function(progress){
-                this.begin().moveTo(0, 0).lineTo(0, -player.radius);
-
-                var theta = Math.PI * 2 * progress;
-                this.arc(0, 0, Math.min(Math.PI, theta));
-                if(theta > Math.PI)
-                    this.arc(0, 0, theta - Math.PI);
-
-                this.close().end();
-            }
-            return arc;
-        }
 
         function onAudioLoadProgress(e){
             player.progress = audio.buffered.end(0) / audio.duration;
@@ -285,8 +295,8 @@ var OknkPlayer = OknkPlayer || (function(){
         function update(){
             player.position = player.audio.currentTime / player.audio.duration;
 
-            player.load_arc.setProgress(player.progress);
-            player.play_arc.setProgress(player.position);
+            player.ui.progress.load.set(player.progress);
+            player.ui.progress.play.set(player.position);
         }
         function loop(){
             update();
@@ -305,13 +315,13 @@ var OknkPlayer = OknkPlayer || (function(){
         play: function(){
             this.audio.play();
             this.playing = true;
-            this.play_tog.icon("pause");
+            this.ui.toggle.icon("pause");
         },
 
         pause: function(){
             this.audio.pause();
             this.playing = false;
-            this.play_tog.icon("play");
+            this.ui.toggle.icon("play");
         },
 
         skip: function(position){
