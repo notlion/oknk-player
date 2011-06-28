@@ -1,5 +1,7 @@
 var OknkPlayer = OknkPlayer || (function(){
 
+    "use strict"; "use restrict";
+
     function Vec2(x, y){
         this.set(x, y);
     }
@@ -49,44 +51,78 @@ var OknkPlayer = OknkPlayer || (function(){
 
     var svg_ns = "http://www.w3.org/2000/svg";
 
-    function SvgPath(){
-        this.element = document.createElementNS(svg_ns, "path");
+    function Elem(tagname){
+        if(arguments.length === 1){
+            this.element = document.createElementNS(svg_ns, tagname);
+            this.transforms = [];
+        }
+    }
+    Elem.prototype.attr = function(name, value){
+        this.element.setAttribute(name, value);
+        return this;
+    };
+    Elem.prototype.class = function(name){
+        return this.attr("class", name);
+    };
+    Elem.prototype.translate = function(x, y){
+        this.transforms.push("translate(" + x + "," + y + ")");
+        return this.attr("transform", this.transforms.join(""));
+    };
+    Elem.prototype.addChild = function(elem){
+        this.element.appendChild(elem.element);
+        return this;
+    };
+
+    function Path(){
+        Elem.call(this, "path");
         this.pos = new Vec2(0, 0);
     }
-    SvgPath.prototype = {
-
-        moveTo: function(x, y){
-            this.d.push("M", x, y);
-            this.pos.set(x, y);
-        },
-
-        lineTo: function(x, y){
-            this.d.push("L", x, y);
-            this.pos.set(x, y);
-        },
-
-        arc: function(cx, cy, theta){
-            var center = new Vec2(cx, cy);
-            var radius = this.pos.distTo(center);
-            var end = this.pos.dup().sub(center).rotate(theta).add(center);
-            this.d.push("A", radius, radius, 0, theta > Math.PI ? 1 : 0, 1, end.x, end.y);
-            this.pos.set(end.x, end.y);
-        },
-
-        close: function(){
-            this.d.push("Z");
-        },
-
-        begin: function(){
-            this.d = [];
-            this.pos.set(0, 0);
-        },
-
-        end: function(){
-            this.element.setAttribute("d", this.d.join(" "));
-        }
-
+    Path.prototype = new Elem();
+    Path.prototype.moveTo = function(x, y){
+        this.d.push("M", x, y);
+        this.pos.set(x, y);
+        return this;
     };
+    Path.prototype.lineTo = function(x, y){
+        this.d.push("L", x, y);
+        this.pos.set(x, y);
+        return this;
+    };
+    Path.prototype.arc = function(cx, cy, theta){
+        var center = new Vec2(cx, cy);
+        var radius = this.pos.distTo(center);
+        var end = this.pos.dup().sub(center).rotate(theta).add(center);
+        this.d.push("A", radius, radius, 0, theta > Math.PI ? 1 : 0, 1, end.x, end.y);
+        this.pos.set(end.x, end.y);
+        return this;
+    };
+    Path.prototype.close = function(){
+        this.d.push("Z");
+        return this;
+    };
+    Path.prototype.begin = function(){
+        this.d = [];
+        this.pos.set(0, 0);
+        return this;
+    };
+    Path.prototype.end = function(){
+        return this.attr("d", this.d.join(" "));
+    };
+
+    function PlayToggle(radius){
+        Elem.call(this, "g");
+
+        this.class("oknk-play-toggle");
+
+        this.gfk_bg = new Elem("circle").attr("r", radius);
+        this.gfk_play = new Path().begin().moveTo(4, 0)
+                                          .lineTo(-3, 4)
+                                          .lineTo(-3, -4).close().end()
+                                          .class("oknk-icon-play");
+
+        this.addChild(this.gfk_bg).addChild(this.gfk_play);
+    }
+    PlayToggle.prototype = new Elem();
 
 
     if(!window.requestAnimationFrame){
@@ -123,6 +159,12 @@ var OknkPlayer = OknkPlayer || (function(){
             this.options[o] = options[o] !== undefined ? options[o] : default_options[o];
 
 
+        var player = this;
+        player.progress = 0;
+        player.position = 0;
+        player.radius = this.options.size / 2;
+
+
         var element = this.element = document.createElement("div");
         element.id = "oknkplayer" + last_player_id++;
 
@@ -132,42 +174,34 @@ var OknkPlayer = OknkPlayer || (function(){
         element.appendChild(audio);
 
 
-        var svg = this.svg = document.createElementNS(svg_ns, "svg");
-        svg.setAttribute("width", this.options.size);
-        svg.setAttribute("height", this.options.size);
+        var svg = this.svg = new Elem("svg").attr("width", this.options.size)
+                                            .attr("height", this.options.size);
 
-        this.load_arc = makeArc();
-        this.load_arc.element.setAttribute("class", "oknk-load-progress");
-        svg.appendChild(this.load_arc.element);
+        var grp = new Elem("g").translate(player.radius, player.radius);
 
-        this.play_arc = makeArc();
-        this.play_arc.element.setAttribute("class", "oknk-play-progress");
-        svg.appendChild(this.play_arc.element);
+        this.load_arc = createArc().class("oknk-progress-load");
+        grp.addChild(this.load_arc);
 
-        element.appendChild(svg);
+        this.play_arc = createArc().class("oknk-progress-play");
+        grp.addChild(this.play_arc);
+
+        this.play_tog = new PlayToggle(player.radius * 0.45);
+        grp.addChild(this.play_tog);
+
+        element.appendChild(svg.addChild(grp).element);
 
 
-        var player = this;
-        player.progress = 0;
-        player.position = 0;
-        player.radius = this.options.size / 2;
-
-        function makeArc(){
-            var arc = new SvgPath();
+        function createArc(){
+            var arc = new Path();
             arc.setProgress = function(progress){
-                var x = y = player.radius;
-
-                this.begin();
-                this.moveTo(x, y);
-                this.lineTo(x, 0);
+                this.begin().moveTo(0, 0).lineTo(0, -player.radius);
 
                 var theta = Math.PI * 2 * progress;
-                this.arc(x, y, Math.min(Math.PI, theta));
+                this.arc(0, 0, Math.min(Math.PI, theta));
                 if(theta > Math.PI)
-                    this.arc(x, y, theta - Math.PI);
+                    this.arc(0, 0, theta - Math.PI);
 
-                this.close();
-                this.end();
+                this.close().end();
             }
             return arc;
         }
@@ -184,10 +218,12 @@ var OknkPlayer = OknkPlayer || (function(){
 
             player.load_arc.setProgress(player.progress);
             player.play_arc.setProgress(player.position);
-
-            window.requestAnimationFrame(update, player.element);
         }
-        update();
+        function loop(){
+            update();
+            window.requestAnimationFrame(loop, player.element);
+        }
+        loop();
     }
 
     Player.prototype = {

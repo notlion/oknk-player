@@ -7,17 +7,33 @@
 <style type="text/css">
 
 body {
-    background: #111;
+    background: #000;
     color: #fff;
     padding: 0;
     margin: 0;
 }
-.oknk-load-progress {
+.oknk-progress-load {
     fill: #024;
 }
-.oknk-play-progress {
+.oknk-progress-play {
     fill: #03f;
 }
+
+.oknk-play-toggle {
+    fill: #012;
+}
+.oknk-icon-play {
+    fill: #03f;
+}
+
+.oknk-play-toggle:hover {
+    fill: #02e;
+    cursor: pointer;
+}
+.oknk-play-toggle:hover .oknk-icon-play {
+    fill: #012;
+}
+
 #player {
     margin: 50px;
 }
@@ -37,9 +53,9 @@ function init(){
     player.load("test.mp3");
     player.play();
 
-    // setTimeout(function(){
-    //     player.pause();
-    // }, 2000);
+    setTimeout(function(){
+        player.pause();
+    }, 2000);
 }
 
 </script>
