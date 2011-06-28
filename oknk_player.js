@@ -47,6 +47,18 @@ var OknkPlayer = OknkPlayer || (function(){
     };
 
 
+    // DOM Helpers
+
+    function elemOffset(elem){
+        var off = new Vec2(elem.offsetLeft, elem.offsetTop);
+        while(elem = elem.offsetParent){
+            off.x += elem.offsetLeft;
+            off.y += elem.offsetTop;
+        }
+        return off;
+    }
+
+
     // SVG Helpers
 
     var svg_ns = "http://www.w3.org/2000/svg";
@@ -258,8 +270,9 @@ var OknkPlayer = OknkPlayer || (function(){
             onScrubMove(e);
         }
         function onScrubMove(e){
-            var ox = e.clientX - (player.element.offsetTop + player.radius);
-            var oy = e.clientY - (player.element.offsetLeft + player.radius);
+            var player_pos = elemOffset(player.element);
+            var ox = e.clientX - (player_pos.x + player.radius);
+            var oy = e.clientY - (player_pos.y + player.radius);
             player.skip((Math.atan2(-ox, oy) + Math.PI) / (Math.PI * 2));
         }
         function onScrubUp(e){
