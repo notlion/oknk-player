@@ -38,8 +38,8 @@ body {
     fill: #012;
 }
 
-#player {
-    margin: 50px;
+#players {
+    position: absolute;
 }
 
 </style>
@@ -53,13 +53,22 @@ function init(){
     var player = new OknkPlayer({
         size: 128
     });
-    document.getElementById("player").appendChild(player.element);
     player.load("test.mp3");
+
+    var players = document.getElementById("players");
+    players.appendChild(player.element);
+
+    function centerPlayers(){
+        players.style.left = ((window.innerWidth - players.clientWidth) / 2) + "px";
+        players.style.top = ((window.innerHeight - players.clientHeight) / 2) + "px";
+    }
+    centerPlayers();
+    window.addEventListener("resize", centerPlayers);
 }
 
 </script>
 
-<div id="player"></div>
+<div id="players"></div>
 
 </body>
 </html>
