@@ -101,6 +101,10 @@ var OknkPlayer = OknkPlayer || (function(){
         this.pos.set(end.x, end.y);
         return this;
     };
+    Path.prototype.rect = function(x1, y1, x2, y2){
+        this.d.push("M", x1, y1, "H", x2, "V", y2, "H", x1, "Z");
+        return this;
+    };
     Path.prototype.close = function(){
         this.d.push("Z");
         return this;
@@ -120,14 +124,30 @@ var OknkPlayer = OknkPlayer || (function(){
         this.attr("class", "oknk-play-toggle");
 
         this.gfk_bg = new Elem("circle").attr("r", radius);
-        this.gfk_play = new Path().begin().moveTo(4, 0)
-                                          .lineTo(-3, 4)
-                                          .lineTo(-3, -4).close().end()
-                                          .attr("class", "oknk-icon-play");
+        this.icons = {
+            play: new Path().begin().moveTo(4, 0)
+                                    .lineTo(-3, 4)
+                                    .lineTo(-3, -4).close().end()
+                                    .attr("class", "oknk-icon-play"),
+            pause: new Path().begin().rect(-4, -4, -1, 4)
+                                     .rect(1, -4, 4, 4).end()
+                                     .attr("class", "oknk-icon-pause")
+        };
 
-        this.addChild(this.gfk_bg).addChild(this.gfk_play);
+        this.addChild(this.gfk_bg)
+        for(var i in this.icons){
+            this.addChild(this.icons[i]);
+        }
+
+        this.icon("play");
     }
     PlayToggle.prototype = new Elem();
+    PlayToggle.prototype.icon = function(name){
+        for(var i in this.icons){
+            this.icons[i].element.style.display = "none";
+        }
+        this.icons[name].element.style.display = "inline";
+    };
 
 
     if(!window.requestAnimationFrame){
@@ -229,9 +249,13 @@ var OknkPlayer = OknkPlayer || (function(){
             }
         }
 
+        var was_playing_before_scrub;
+
         function onScrubDown(e){
             document.addEventListener("mousemove", onScrubMove);
             document.addEventListener("mouseup", onScrubUp);
+            was_playing_before_scrub = player.playing;
+            onScrubMove(e);
         }
         function onScrubMove(e){
             var ox = e.clientX - (player.element.offsetTop + player.radius);
@@ -241,6 +265,8 @@ var OknkPlayer = OknkPlayer || (function(){
         function onScrubUp(e){
             document.removeEventListener("mousemove", onScrubMove);
             document.removeEventListener("mouseup", onScrubUp);
+            if(was_playing_before_scrub)
+                player.play();
         }
 
         function update(){
@@ -266,19 +292,18 @@ var OknkPlayer = OknkPlayer || (function(){
         play: function(){
             this.audio.play();
             this.playing = true;
+            this.play_tog.icon("pause");
         },
 
         pause: function(){
             this.audio.pause();
             this.playing = false;
+            this.play_tog.icon("play");
         },
 
         skip: function(position){
-            var was_playing = this.playing;
             this.pause();
             this.audio.currentTime = position * this.audio.duration;
-            if(was_playing)
-                this.play();
         }
 
     };
