@@ -6,29 +6,24 @@ var OknkPlayer = OknkPlayer || (function(){
         this.set(x, y);
     }
     Vec2.prototype = {
-
         set: function(x, y){
             this.x = x;
             this.y = y;
             return this;
         },
-
         dup: function(){
             return new Vec2(this.x, this.y);
         },
-
         add: function(v){
             this.x += v.x;
             this.y += v.y;
             return this;
         },
-
         sub: function(v){
             this.x -= v.x;
             this.y -= v.y;
             return this;
         },
-
         rotate: function(theta){
             var st = Math.sin(theta);
             var ct = Math.cos(theta);
@@ -37,13 +32,11 @@ var OknkPlayer = OknkPlayer || (function(){
                 this.x * st + this.y * ct
             );
         },
-
         distTo: function(v){
             var xo = v.x - this.x;
             var yo = v.y - this.y;
             return Math.sqrt(xo * xo + yo * yo);
         }
-
     };
 
 
@@ -58,6 +51,25 @@ var OknkPlayer = OknkPlayer || (function(){
         return off;
     }
 
+    var requestAnimFrame = (function(){
+        return window.requestAnimationFrame       ||
+               window.webkitRequestAnimationFrame ||
+               window.mozRequestAnimationFrame    ||
+               window.oRequestAnimationFrame      ||
+               window.msRequestAnimationFrame     ||
+               function(callback, element){
+                   return window.setTimeout(callback, 1000 / 60);
+               };
+    })();
+    var cancelRequestAnimFrame = (function(){
+        return window.cancelRequestAnimationFrame       ||
+               window.webkitCancelRequestAnimationFrame ||
+               window.mozCancelRequestAnimationFrame    ||
+               window.oCancelRequestAnimationFrame      ||
+               window.msCancelRequestAnimationFrame     ||
+               clearTimeout
+    })();
+
 
     // SVG Helpers
 
@@ -69,25 +81,27 @@ var OknkPlayer = OknkPlayer || (function(){
             this.transforms = [];
         }
     }
-    Elem.prototype.attr = function(name, value){
-        this.element.setAttribute(name, value);
-        return this;
-    };
-    Elem.prototype.translate = function(x, y){
-        this.transforms.push("translate(" + x + "," + y + ")");
-        return this.attr("transform", this.transforms.join(""));
-    };
-    Elem.prototype.addChild = function(elem){
-        this.element.appendChild(elem.element);
-        return this;
-    };
-    Elem.prototype.on = function(name, callback){
-        this.element.addEventListener(name, callback);
-        return this;
-    };
-    Elem.prototype.off = function(name, callback){
-        this.element.removeEventListener(name, callback);
-        return this;
+    Elem.prototype = {
+        attr: function(name, value){
+            this.element.setAttribute(name, value);
+            return this;
+        },
+        translate: function(x, y){
+            this.transforms.push("translate(" + x + "," + y + ")");
+            return this.attr("transform", this.transforms.join(""));
+        },
+        addChild: function(elem){
+                this.element.appendChild(elem.element);
+                return this;
+        },
+        on: function(name, callback){
+            this.element.addEventListener(name, callback);
+            return this;
+        },
+        off: function(name, callback){
+            this.element.removeEventListener(name, callback);
+            return this;
+        }
     };
 
     function Path(){
@@ -129,6 +143,9 @@ var OknkPlayer = OknkPlayer || (function(){
     Path.prototype.end = function(){
         return this.attr("d", this.d.join(" "));
     };
+
+
+    // UI
 
     function Toggle(radius){
         Elem.call(this, "g");
@@ -187,28 +204,6 @@ var OknkPlayer = OknkPlayer || (function(){
         this.addChild(this.play);
     }
     Progress.prototype = new Elem();
-
-
-    if(!window.requestAnimationFrame){
-        window.requestAnimationFrame = (function(){
-            return window.webkitRequestAnimationFrame ||
-                   window.mozRequestAnimationFrame    ||
-                   window.oRequestAnimationFrame      ||
-                   window.msRequestAnimationFrame     ||
-                   function(callback, element){
-                       return window.setTimeout(callback, 1000 / 60);
-                   };
-        })();
-    }
-    if(!window.cancelRequestAnimationFrame){
-        window.cancelRequestAnimationFrame = (function(){
-            return window.webkitCancelRequestAnimationFrame ||
-                   window.mozCancelRequestAnimationFrame    ||
-                   window.oCancelRequestAnimationFrame      ||
-                   window.msCancelRequestAnimationFrame     ||
-                   clearTimeout
-        })();
-    }
 
 
     var default_options = {
@@ -300,7 +295,7 @@ var OknkPlayer = OknkPlayer || (function(){
         }
         function loop(){
             update();
-            window.requestAnimationFrame(loop, player.element);
+            requestAnimFrame(loop, player.element);
         }
         loop();
     }
