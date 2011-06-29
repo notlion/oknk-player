@@ -152,6 +152,12 @@ var OknkPlayer = OknkPlayer || (function(){
     };
 
 
+    // Tween Helpers
+
+    function tween(obj, property){
+    }
+
+
     // UI
 
     function Toggle(radius){
