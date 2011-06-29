@@ -1,6 +1,6 @@
 var OknkPlayer = OknkPlayer || (function(){
 
-    "use strict"; "use restrict";
+    "use strict";
 
     function Vec2(x, y){
         this.set(x, y);

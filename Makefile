@@ -1,6 +1,6 @@
 JS_FILES = \
-	lib/soundmanager2-nodebug.js \
-	src/OknkPlayer.js
+	src/OknkPlayer.js \
+	lib/soundmanager2-nodebug.js
 
 JS_COMPILER = \
 	java -jar util/compiler-20110615/compiler.jar \
