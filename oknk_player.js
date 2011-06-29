@@ -73,17 +73,24 @@ var OknkPlayer = OknkPlayer || (function(){
 
     // SVG Helpers
 
-    var svg_ns = "http://www.w3.org/2000/svg";
+    var ns = {
+        svg:   "http://www.w3.org/2000/svg",
+        xlink: "http://www.w3.org/1999/xlink"
+    };
 
     function Elem(tagname){
         if(arguments.length === 1){
-            this.element = document.createElementNS(svg_ns, tagname);
+            this.element = document.createElementNS(ns.svg, tagname);
             this.transforms = [];
         }
     }
     Elem.prototype = {
         attr: function(name, value){
-            this.element.setAttribute(name, value);
+            var idx = name.indexOf(":");
+            if(idx >= 0)
+                this.element.setAttributeNS(ns[name.slice(0, idx)], name, value);
+            else
+                this.element.setAttribute(name, value);
             return this;
         },
         translate: function(x, y){
@@ -123,7 +130,7 @@ var OknkPlayer = OknkPlayer || (function(){
         var center = new Vec2(cx, cy);
         var radius = this.pos.distTo(center);
         var end = this.pos.dup().sub(center).rotate(theta).add(center);
-        this.d.push("A", radius, radius, 0, theta > Math.PI ? 1 : 0, 1, end.x, end.y);
+        this.d.push("A", radius, radius, 0, theta > Math.PI ? 1 : 0, theta < 0 ? 0 : 1, end.x, end.y);
         this.pos.set(end.x, end.y);
         return this;
     };
@@ -150,7 +157,7 @@ var OknkPlayer = OknkPlayer || (function(){
     function Toggle(radius){
         Elem.call(this, "g");
 
-        this.attr("class", "oknk-play-toggle");
+        this.attr("class", "oknk-toggle");
 
         this.gfk_bg = new Elem("circle").attr("r", radius);
         this.icons = {
@@ -176,6 +183,7 @@ var OknkPlayer = OknkPlayer || (function(){
             this.icons[i].element.style.display = "none";
         }
         this.icons[name].element.style.display = "inline";
+        return this;
     };
 
     function Progress(radius){
@@ -188,10 +196,12 @@ var OknkPlayer = OknkPlayer || (function(){
             arc.set = function(progress){
                 this.begin().moveTo(0, 0).lineTo(0, -radius);
 
-                var theta = Math.PI * 2 * progress;
-                this.arc(0, 0, Math.min(Math.PI, theta));
-                if(theta > Math.PI)
-                    this.arc(0, 0, theta - Math.PI);
+                if(progress > 0){
+                    var theta = Math.PI * 2 * progress;
+                    this.arc(0, 0, Math.min(Math.PI, theta));
+                    if(theta > Math.PI)
+                        this.arc(0, 0, theta - Math.PI);
+                }
 
                 this.close().end();
             }
@@ -204,6 +214,32 @@ var OknkPlayer = OknkPlayer || (function(){
         this.addChild(this.play);
     }
     Progress.prototype = new Elem();
+
+    function ArcLabel(radius){
+        Elem.call(this, "g");
+
+        this.attr("class", "oknk-label");
+
+        var defs = new Elem("defs").addChild(
+            new Path().begin().moveTo(0, -radius)
+                              .arc(0, 0, -Math.PI)
+                              .arc(0, 0, -Math.PI).end()
+                              .attr("id", "path")
+        );
+
+        this.textpath = new Elem("textPath").attr("xlink:href", "#path")
+                                            .attr("text-anchor", "middle")
+                                            .attr("startOffset", "50%");
+        this.text = new Elem("text").addChild(this.textpath);
+
+        this.addChild(defs);
+        this.addChild(this.text);
+    }
+    ArcLabel.prototype = new Elem();
+    ArcLabel.prototype.setText = function(text){
+        this.textpath.element.textContent = text;
+        return this;
+    };
 
 
     var default_options = {
@@ -234,7 +270,9 @@ var OknkPlayer = OknkPlayer || (function(){
         element.appendChild(audio);
 
 
-        var svg = this.svg = new Elem("svg").attr("width", this.options.size)
+        var svg = this.svg = new Elem("svg").attr("xmlns", ns.svg)
+                                            .attr("xmlns:xlink", ns.xlink)
+                                            .attr("width", this.options.size)
                                             .attr("height", this.options.size);
 
         var grp = new Elem("g").translate(player.radius, player.radius);
@@ -301,29 +339,24 @@ var OknkPlayer = OknkPlayer || (function(){
     }
 
     Player.prototype = {
-
         load: function(src){
             this.audio.src = src;
             this.audio.load();
         },
-
         play: function(){
             this.audio.play();
             this.playing = true;
             this.ui.toggle.icon("pause");
         },
-
         pause: function(){
             this.audio.pause();
             this.playing = false;
             this.ui.toggle.icon("play");
         },
-
         skip: function(position){
             this.pause();
             this.audio.currentTime = position * this.audio.duration;
         }
-
     };
 
     return Player;
